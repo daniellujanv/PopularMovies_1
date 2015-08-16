@@ -14,6 +14,8 @@ import java.lang.ref.WeakReference;
 import java.net.URL;
 
 /**
+ * Code obtained from http://developer.android.com/training/displaying-bitmaps/process-bitmap.html
+ *
  * Created by daniellujanvillarreal on 8/10/15.
  */
 public class BitmapWorkerTask extends AsyncTask<URL, Void, Bitmap> {

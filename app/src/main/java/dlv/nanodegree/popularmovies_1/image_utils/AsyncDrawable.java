@@ -9,6 +9,9 @@ import java.lang.ref.WeakReference;
 import dlv.nanodegree.popularmovies_1.tasks.BitmapWorkerTask;
 
 /**
+ *
+ * Code obtained from http://developer.android.com/training/displaying-bitmaps/process-bitmap.html
+ *
  * Created by daniellujanvillarreal on 8/10/15.
  */
 
