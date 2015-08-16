@@ -31,7 +31,7 @@ public class LoadMoviesTask extends AsyncTask<Boolean, Void, ArrayList<Movie>> {
     private String TAG = getClass().getSimpleName();
     private Context mContext;
     private ImageAdapter mImageAdapter;
-    private final String API_KEY = "51e32c2c092146dc7e247586b5373735";
+    private final String API_KEY = ""; //INSERT API KEY FOR themoviedb HERE
 
     public LoadMoviesTask(Context context, ImageAdapter imageAdapter){
         mContext = context;
