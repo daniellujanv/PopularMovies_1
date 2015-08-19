@@ -1,11 +1,15 @@
 package dlv.nanodegree.popularmovies_1;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.GridView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -33,6 +37,14 @@ public class MainActivity extends AppCompatActivity {
         mImageAdapter = new ImageAdapter(getApplicationContext(), getLayoutInflater());
         mGridView.setAdapter(mImageAdapter);
 
+        /**
+         * if savedInstance not null
+         **  --> set saved selectedItemId and Movies array list
+         * if saved instance == null
+         **  --> since init mSelectedItemId = -1 and LoadMoviesTask(sort_popular = true) will be executed
+         *  in onCreateOptionsMenu()
+
+         */
         if(savedInstanceState != null){
             if(savedInstanceState.containsKey(selectedItemIdKey)) {
                 mSelectedItemId = savedInstanceState.getInt(selectedItemIdKey);
@@ -51,7 +63,9 @@ public class MainActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         mMenu = menu;
+
         if(mSelectedItemId == -1){
+            //app just launched and there is nothing selected --> select popular sort order
             onOptionsItemSelected(menu.findItem(R.id.action_popular));
         }else{
             menu.findItem(mSelectedItemId).setChecked(true);
@@ -61,23 +75,29 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        //noinspection SimplifiableIfStatement
-        if (item.getItemId() == R.id.action_popular) {
-            Log.i(TAG, "action_popular selected");
-//            item.setChecked(true);
-            //load data with task
-            new LoadMoviesTask(getApplicationContext(), mImageAdapter, item).execute(true);
-            mGridView.smoothScrollToPosition(0);
-            return true;
-        }else if(item.getItemId() == R.id.action_highest_rated){
-            Log.i(TAG, "action_highest_rated selected");
-//            item.setChecked(true);
-            new LoadMoviesTask(getApplicationContext(), mImageAdapter, item).execute(false);
-            mGridView.smoothScrollToPosition(0);
-            return true;
+        /**
+         * check if previously selected sort order is the same as currently selected
+         */
+        if(isNetworkAvailable()) {
+            if(mSelectedItemId != item.getItemId()) {
+                mSelectedItemId = item.getItemId();
+                if (mSelectedItemId == R.id.action_popular) {
+                    Log.i(TAG, "action_popular selected");
+                    //load data with task.execute(popupar = true)
+                    new LoadMoviesTask(getApplicationContext(), mImageAdapter, item).execute(true);
+                    mGridView.smoothScrollToPosition(0);
+                    return true;
+                } else if (mSelectedItemId == R.id.action_highest_rated) {
+                    Log.i(TAG, "action_highest_rated selected");
+                    //load data with task.execute(popupar = false)
+                    new LoadMoviesTask(getApplicationContext(), mImageAdapter, item).execute(false);
+                    mGridView.smoothScrollToPosition(0);
+                    return true;
+                }
+            }
+        }
+        else {
+            showToast("Network not available. Check connection or try again later");
         }
 
         return super.onOptionsItemSelected(item);
@@ -86,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onSaveInstanceState(Bundle outState){
         super.onSaveInstanceState(outState);
+        //save selected menu item id
         Log.i(TAG, "selectedItem :: " + mSelectedItemId);
         for(int i=0; i<mMenu.size(); i++){
             if(mMenu.getItem(i).isChecked()){
@@ -94,11 +115,22 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         Log.i(TAG,"outstate putting selectedItem :: "+mSelectedItemId);
-//        if(mSelectedItemId != -1) {
         outState.putInt(selectedItemIdKey, mSelectedItemId);
-//        }
+        //save movie list
         ArrayList<Movie> movies = mImageAdapter.getMovies();
         Log.i(TAG, "outstate putting movies :: "+movies.size());
         outState.putParcelableArrayList(moviesKey, movies);
+    }
+
+    //Based on a stackoverflow snippet
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
+    private void showToast(String message){
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
     }
 }

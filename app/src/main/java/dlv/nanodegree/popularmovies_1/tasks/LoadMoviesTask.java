@@ -32,7 +32,7 @@ public class LoadMoviesTask extends AsyncTask<Boolean, String, ArrayList<Movie>>
     private Context mContext;
     private WeakReference<ImageAdapter> mImageAdapter;
     private WeakReference<MenuItem> mMenuItem;
-    //TODO remove key
+    //TODO add key
     private final String API_KEY = ""; //INSERT API KEY FOR themoviedb HERE
 
     public LoadMoviesTask(Context context, ImageAdapter imageAdapter
