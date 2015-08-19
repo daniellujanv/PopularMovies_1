@@ -1,10 +1,10 @@
 package dlv.nanodegree.popularmovies_1.tasks;
 
 import android.content.Context;
-import android.graphics.drawable.GradientDrawable;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.GridView;
+import android.view.MenuItem;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -14,11 +14,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import dlv.nanodegree.popularmovies_1.adapters.ImageAdapter;
@@ -27,15 +27,19 @@ import dlv.nanodegree.popularmovies_1.classes.Movie;
 /**
  * Created by DanielLujanApps on Monday10/08/15.
  */
-public class LoadMoviesTask extends AsyncTask<Boolean, Void, ArrayList<Movie>> {
+public class LoadMoviesTask extends AsyncTask<Boolean, String, ArrayList<Movie>> {
     private String TAG = getClass().getSimpleName();
     private Context mContext;
-    private ImageAdapter mImageAdapter;
+    private WeakReference<ImageAdapter> mImageAdapter;
+    private WeakReference<MenuItem> mMenuItem;
+    //TODO remove key
     private final String API_KEY = ""; //INSERT API KEY FOR themoviedb HERE
 
-    public LoadMoviesTask(Context context, ImageAdapter imageAdapter){
+    public LoadMoviesTask(Context context, ImageAdapter imageAdapter
+            , MenuItem menuItem){
         mContext = context;
-        mImageAdapter = imageAdapter;
+        mImageAdapter = new WeakReference<>(imageAdapter);
+        mMenuItem = new WeakReference<>(menuItem);
     }
 
     @Override
@@ -61,8 +65,16 @@ public class LoadMoviesTask extends AsyncTask<Boolean, Void, ArrayList<Movie>> {
 
                 // Convert the InputStream into a string
                 return getArrayListFromString(readIt(is));
-            } catch (IOException e) {
+
+            } catch(UnknownHostException uhe){
+                publishProgress("Error fetching movies. Check connection or try again later.");
+                uhe.printStackTrace();
+                return null;
+            }
+            catch (IOException e) {
+                publishProgress("Error fetching movies. Try again later.");
                 e.printStackTrace();
+                return null;
             }
         }else{
             //fetch highest rated
@@ -83,23 +95,35 @@ public class LoadMoviesTask extends AsyncTask<Boolean, Void, ArrayList<Movie>> {
 
                 // Convert the InputStream into a string
                 return getArrayListFromString(readIt(is));
-            } catch (IOException e) {
+            } catch(UnknownHostException uhe){
+                publishProgress("Error fetching movies. Check connection or try again later.");
+                uhe.printStackTrace();
+                return null;
+            }
+            catch (IOException e) {
+                publishProgress("Error fetching movies. Try again later.");
                 e.printStackTrace();
+                return null;
             }
         }
 
-        return null;
+//        return new ArrayList<Movie>();
+    }
+
+    @Override
+    protected void onProgressUpdate(String... messages){
+        Toast.makeText(mContext, messages[0], Toast.LENGTH_LONG).show();
     }
 
     @Override
     protected void onPostExecute(ArrayList<Movie> result){
         if(result != null) {
-            Log.i(TAG,"fetched #movies:: "+result.size());
-            mImageAdapter.updateMovies(result);
-        }else{
-            mImageAdapter.updateMovies(new ArrayList<Movie>());
+            Log.i(TAG, "fetched #movies:: " + result.size());
+            mImageAdapter.get().updateMovies(result);
+            //we set the menuItem checked until movie loading is complete
+            //other wise the menuItem will be checked but the UI wouldn't change
+            mMenuItem.get().setChecked(true);
         }
-
     }
 
     private ArrayList<Movie> getArrayListFromString(String response){

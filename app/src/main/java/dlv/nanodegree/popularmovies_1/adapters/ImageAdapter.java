@@ -2,6 +2,7 @@ package dlv.nanodegree.popularmovies_1.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,7 +26,7 @@ import dlv.nanodegree.popularmovies_1.tasks.BitmapWorkerTask;
  */
 public class ImageAdapter extends BaseAdapter  {
     private String TAG = getClass().getSimpleName();
-    private ArrayList<Movie> alMovies;
+    public ArrayList<Movie> alMovies;
     private Context mContext;
     private LayoutInflater mLayoutInflater;
 
@@ -36,9 +37,12 @@ public class ImageAdapter extends BaseAdapter  {
     }
 
     public void updateMovies(ArrayList<Movie> movies){
-        Log.i(TAG, "updating #movies:: " + movies.size());
         alMovies = movies;
         notifyDataSetChanged();
+        if(movies != null && movies.size() > 0) {
+
+            Log.i(TAG, "updating #movies:: " + movies.size());
+        }
     }
 
     @Override
@@ -78,25 +82,41 @@ public class ImageAdapter extends BaseAdapter  {
 
         width = imageView.getMeasuredWidth();
         height = imageView.getMeasuredHeight();
-        URL posterUrl = alMovies.get(position).getmPosterUrl();
-        if (ImageLoadUtils.cancelPotentialWork(posterUrl, imageView)) {
+        Movie movie = alMovies.get(position);
+        /**
+         * If we already have the bytes, save the request and get the bitmap from bytes
+         */
+        if(movie.hasPosterByteArray()){
+            Log.i(TAG, "hasPosterByteArray!!!!!");
+            byte[] array = movie.getPosterByteArray();
+            imageView.setImageBitmap(BitmapFactory.decodeByteArray(array, 0, array.length));
 
-            Log.d(TAG, "width :: "+width +"... height :: "+height);
+        }else {
+            /**
+             * first time loading movie... get bitmap, save bytes, and display bitmap
+             */
 
-            final BitmapWorkerTask workerTask = new BitmapWorkerTask( imageView, width, height);
-            final AsyncDrawable asyncDrawable =
-                    new AsyncDrawable(mContext.getResources(), null, workerTask);
-            imageView.setImageDrawable(asyncDrawable);
-            workerTask.execute(posterUrl);
+            URL posterUrl = alMovies.get(position).getmPosterUrl();
+            if (ImageLoadUtils.cancelPotentialWork(posterUrl, imageView)) {
+
+                Log.d(TAG, "width :: " + width + "... height :: " + height);
+
+                final BitmapWorkerTask workerTask =
+                        new BitmapWorkerTask(
+                                imageView, width, height, alMovies.get(position), false);
+
+                final AsyncDrawable asyncDrawable =
+                        new AsyncDrawable(mContext.getResources(), null, workerTask);
+                imageView.setImageDrawable(asyncDrawable);
+                workerTask.execute();
+            }
         }
-
         final int i = position;
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //TODO
                 Intent intent = new Intent(mContext, DetailActivity.class);
-                intent.putExtra("movie", alMovies.get(i));
+                intent.putExtra(Movie.MOVIE_KEY, alMovies.get(i));
 
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 mContext.startActivity(intent);
@@ -106,5 +126,9 @@ public class ImageAdapter extends BaseAdapter  {
         });
 
         return view;
+    }
+
+    public ArrayList<Movie> getMovies(){
+        return alMovies;
     }
 }
